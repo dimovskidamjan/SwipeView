@@ -480,6 +480,14 @@
     
     if (!CGSizeEqualToSize(_scrollView.contentSize, contentSize))
     {
+        // contentSize is changed, make sure the content offset is adjusted based on the current item index
+        CGPoint newContentOffset;
+        if (_vertical) {
+            newContentOffset = CGPointMake(0.f, _currentItemIndex * _itemSize.height);
+        } else {
+            newContentOffset = CGPointMake(_currentItemIndex * _itemSize.width, 0.f);
+        }
+        [self setContentOffsetWithoutEvent:newContentOffset];
         _scrollView.contentSize = contentSize;
     }
 }
@@ -724,11 +732,14 @@
 {
     if (!CGPointEqualToPoint(_scrollView.contentOffset, contentOffset))
     {
+        BOOL old = _suppressScrollEvent;
+        
         BOOL animationEnabled = [UIView areAnimationsEnabled];
         if (animationEnabled) [UIView setAnimationsEnabled:NO];
         _suppressScrollEvent = YES;
         _scrollView.contentOffset = contentOffset;
         _suppressScrollEvent = NO;
+        _suppressScrollEvent = old;
         if (animationEnabled) [UIView setAnimationsEnabled:YES];
     }
 }
@@ -1000,7 +1011,7 @@
     
     //get number of items
     [self updateItemSizeAndCount];
-
+    
     //layout views
     [self setNeedsLayout];
     
@@ -1158,6 +1169,7 @@
 
 - (void)scrollViewWillBeginDragging:(__unused UIScrollView *)scrollView
 {
+    _suppressScrollEvent = NO;
     [_delegate swipeViewWillBeginDragging:self];
     
     //force refresh
@@ -1195,6 +1207,7 @@
     [self didScroll];
     
     [_delegate swipeViewDidEndDecelerating:self];
+    _suppressScrollEvent = YES;
 }
 
 @end
